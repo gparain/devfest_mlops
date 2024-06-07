@@ -30,8 +30,10 @@ def _create_pipeline(pipeline_name: str, pipeline_root: str, query: str,
 
     # query data in BigQuery as a data source
     output = tfx.proto.Output(
-        # TODO: split dataset into train/eval with 80% data going to train and 20% to eval
-        # reference : https://www.tensorflow.org/tfx/guide/examplegen#custom_inputoutput_split
+        example_gen=pipeline_name.SplitConfig(splits=[
+                 proto.SplitConfig.Split(name='train', hash_buckets=4),
+                 proto.SplitConfig.Split(name='eval', hash_buckets=1)
+             ])
     )
 
     example_gen = tfx.extensions.google_cloud_big_query.BigQueryExampleGen(
@@ -40,8 +42,8 @@ def _create_pipeline(pipeline_name: str, pipeline_root: str, query: str,
 
     # compute the statistics
     statistics_gen = tfx.components.StatisticsGen(
-        # TODO: define StatisticsGen arguments
-        # reference: https://www.tensorflow.org/tfx/guide/statsgen
+        examples=example_gen.outputs['examples'],
+        name='compute-eval-stats'
     )
 
     # generate schema
@@ -49,8 +51,9 @@ def _create_pipeline(pipeline_name: str, pipeline_root: str, query: str,
 
     # pre-process data
     transformer = tfx.components.Transform(
-        # TODO: define Transform arguments
-        # reference: https://www.tensorflow.org/tfx/guide/transform
+        examples=example_gen.outputs['examples'],
+        schema=schema_gen.outputs['schema'],
+        module_file=transformer_module_file
     )
 
     # train the model with user-provided Python function
@@ -94,7 +97,12 @@ def _create_pipeline(pipeline_name: str, pipeline_root: str, query: str,
 
     components = [
         example_gen,
-        # TODO: list the pipeline components
+        statistics_gen,
+        schema_gen,
+        transformer,
+        trainer,
+        pusher,
+        monitorer
     ]
 
     return tfx.dsl.Pipeline(
