@@ -22,10 +22,8 @@ class MonitorerComponentSpec(types.ComponentSpec):
         'sample_rate': ExecutionParameter(type=float)
     }
     INPUTS = {
-        # TODO: Define the input interface of the component
-        # reference : https://www.tensorflow.org/tfx/guide/custom_component
-        # You will find information about the name of the variable to pass in this file or the create_pipeline.py file
-        # For their type you can look into: https://www.tensorflow.org/tfx/api_docs/python/tfx/v1/types/standard_artifacts
+        'statistics': ChannelParameter(type=standard_artifacts.ExampleStatistics),
+        'pushed_model': ChannelParameter(type=standard_artifacts.PushedModel),
     }
     OUTPUTS = {
     }
